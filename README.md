@@ -20,6 +20,10 @@ The user sends a target URL, method, total requests, and concurrency. The API cr
 - Redis stores live progress using `progress:{testId}`
 - PostgreSQL stores the final result after completion
 
+## Architecture Diagram
+
+![HLD Diagram](assets/hld.png)
+
 ## API
 
 ### `POST /load-test`
