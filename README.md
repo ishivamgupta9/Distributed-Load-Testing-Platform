@@ -1,108 +1,55 @@
 # Distributed Load Testing Platform
 
-## Description
+## About
 
-This is a small backend project for running load tests against any API.
+This is a simple backend project for running load tests on any API.
 
-A user can start a load test by sending a target URL, HTTP method, total number of requests, and concurrency level. The system then processes that job in the background, sends concurrent requests to the target API, and tracks useful metrics like response time, error count, and throughput.
-
-The API does not run the load test directly. It only accepts the request, creates a job, and returns a `testId`. A worker picks up the job and runs the test separately.
+The user sends a target URL, method, total requests, and concurrency. The API creates a job and returns a `testId` immediately. A worker picks up that job, sends concurrent requests to the target API, tracks progress in Redis, and stores the final result in PostgreSQL.
 
 ## Tech Stack
 
 - Node.js
 - Express
-- Redis
-- BullMQ
+- Redis + BullMQ
 - PostgreSQL
 
-## Architecture Overview
+## How It Works
 
-The flow is simple:
+- `POST /load-test` accepts the request and pushes a job to BullMQ
+- the worker processes the job and runs the load test
+- Redis stores live progress using `progress:{testId}`
+- PostgreSQL stores the final result after completion
 
-- The API receives a load test request and pushes it to a BullMQ queue.
-- A worker process picks up the job and runs the load test.
-- Redis stores live progress so the client can check status while the test is running.
-- PostgreSQL stores the final result once the test is completed.
-
-This keeps the API responsive and makes the worker responsible for the actual execution.
-
-## API Endpoints
+## API
 
 ### `POST /load-test`
 
-Creates a new load test job and returns a `testId` immediately.
+Starts a new load test.
 
-Sample request body:
+Example body:
 
 ```json
 {
   "url": "https://httpbin.org/get",
   "method": "GET",
   "total_requests": 10,
-  "concurrency": 2,
-  "headers": {
-    "x-test": "demo"
-  },
-  "payload": {
-    "name": "sample"
-  }
-}
-```
-
-Sample response:
-
-```json
-{
-  "testId": "6ed1acbd-506e-438a-aaf4-f907590cfbc5"
+  "concurrency": 2
 }
 ```
 
 ### `GET /load-test/:testId`
 
-Returns the current status of the load test.
+Returns the current status and final metrics when the test is completed.
 
-If the test is still running, it returns progress fields like:
-
-- `status`
-- `completed`
-- `total`
-- `errors`
-
-If the test is completed, it also returns:
-
-- `average_response_time`
-- `error_rate`
-- `throughput`
-
-## How To Run Locally
-
-### 1. Clone the repo
+## Run Locally
 
 ```bash
 git clone https://github.com/ishivamgupta9/Distributed-Load-Testing-Platform.git
 cd Traya
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Set up environment variables
-
 Create a `.env` file from `.env.example`.
-
-Required values:
-
-- `PORT`
-- `REDIS_URL`
-- `DATABASE_URL`
-- `REQUEST_TIMEOUT_MS`
-- `PROGRESS_UPDATE_BATCH_SIZE`
-- `PROGRESS_TTL_SECONDS`
-- `QUEUE_NAME`
 
 Example:
 
@@ -116,93 +63,29 @@ PROGRESS_TTL_SECONDS=86400
 QUEUE_NAME=load-tests
 ```
 
-### 4. Start Redis
-
-Make sure Redis is running locally.
-
-Example:
-
-```bash
-brew services start redis
-```
-
-### 5. Start PostgreSQL
-
-Make sure PostgreSQL is running and the `load_testing` database exists.
-
-### 6. Start the worker
+Make sure Redis and PostgreSQL are running, then start the worker and API:
 
 ```bash
 npm run worker
-```
-
-### 7. Start the API server
-
-```bash
 npm start
 ```
-
-Once both are running, you can test the endpoints using Postman or curl.
 
 ## Project Structure
 
 ```text
 src/
   config/
-    env.js
   lib/
-    db.js
-    queue.js
-    redis.js
   routes/
-    loadTestRoutes.js
   services/
-    loadTestRunner.js
   workers/
-    loadTestWorker.js
   server.js
 postman/
-  load-testing.postman_collection.json
 ```
 
-What each part does:
+## Notes
 
-- `config/` holds environment configuration
-- `lib/` contains shared setup for Redis, queue, and database
-- `routes/` contains the API endpoints
-- `services/` contains the load test execution logic
-- `workers/` contains the BullMQ worker process
-- `server.js` starts the Express app
-
-## Notes / Decisions
-
-### Why a queue is used
-
-Load testing can take time, so it should not run inside the API request itself. The queue lets the API respond immediately and keeps the heavy work in a separate worker.
-
-### Why Redis is used
-
-Redis is used for two things here:
-
-- BullMQ uses Redis for the queue
-- The app stores live progress in Redis using `progress:{testId}`
-
-This makes status checks fast and simple.
-
-### Why PostgreSQL is used
-
-PostgreSQL is used only for final result storage. Once the load test is finished, the worker inserts one row with the final metrics.
-
-## Postman Collection
-
-A Postman collection is included in the project for quick testing:
-
-```text
-postman/load-testing.postman_collection.json
-```
-
-You can import it into Postman and use it to:
-
-- create a load test
-- automatically save the returned `testId`
-- check the load test status
+- BullMQ is used so the API does not run the load test directly
+- Redis is used for both queueing and live progress tracking
+- PostgreSQL is used only for final result storage
+- A Postman collection is included for testing
