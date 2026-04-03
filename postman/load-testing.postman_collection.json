@@ -1,0 +1,80 @@
+{
+  "info": {
+    "_postman_id": "7db28c5f-c66f-4a9a-b6d2-0f15f1a5d2d1",
+    "name": "Distributed Load Testing Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Small Postman collection for the load testing assignment."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "testId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Load Test",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const response = pm.response.json();",
+              "if (response.testId) {",
+              "  pm.collectionVariables.set('testId', response.testId);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://httpbin.org/get\",\n  \"method\": \"GET\",\n  \"total_requests\": 10,\n  \"concurrency\": 2\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/load-test",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "load-test"
+          ]
+        },
+        "description": "Queues a new load test job and stores the returned testId into the collection variable."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Load Test Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/load-test/{{testId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "load-test",
+            "{{testId}}"
+          ]
+        },
+        "description": "Fetches the current status or final metrics for the last created load test."
+      },
+      "response": []
+    }
+  ]
+}

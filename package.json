@@ -1,0 +1,28 @@
+{
+  "name": "distributed-load-testing-platform",
+  "version": "1.0.0",
+  "description": "Queue-based load testing backend built with Express, BullMQ, Redis, and PostgreSQL.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "worker": "node src/workers/loadTestWorker.js"
+  },
+  "keywords": [
+    "express",
+    "bullmq",
+    "redis",
+    "postgres",
+    "load-testing"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bullmq": "^5.56.0",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "ioredis": "^5.7.0",
+    "pg": "^8.16.0"
+  }
+}
